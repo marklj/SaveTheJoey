@@ -14,5 +14,4 @@ General Info:
 -------------
 This game will be based on the popular arcade game, Frogger.
 The game will be based on the pygame framework.
-Chon is cool.
 
