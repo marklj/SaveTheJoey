@@ -106,7 +106,7 @@ class Car(pygame.sprite.Sprite):
     
            
 pygame.init()
-screen = pygame.display.set_mode((468, 70))
+screen = pygame.display.set_mode((468, 78))
 pygame.mouse.set_visible(0)
 
 background = pygame.Surface(screen.get_size())
