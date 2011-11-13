@@ -17,6 +17,12 @@ def load_image(name, colorkey=None):
             colorkey = image.get_at((0,0))
         image.set_colorkey(colorkey,RLEACCEL)
     return image, image.get_rect()
+class Stat():
+    def __init__(self, startLives=3):
+        self.lives = startLives
+        self.level = 1
+        self.score = 0
+    
 
 class Grid(pygame.sprite.Sprite):
     def make_grid(self, loc):
@@ -57,8 +63,11 @@ class A(pygame.sprite.Sprite):
     
     def update(self):
         hitbox = self.rect.inflate(-10,0)
+        #if object hits another car...
         for i in range(0, len(cars)):
             if(hitbox.colliderect(cars[i].rect) and self.rect != cars[i].rect):
+                stat.lives -= 1
+                print stat.lives
                 self.resetPos()
         screenPos = (((self.pos[0]*100)+10),((self.pos[1]*100)+10))
         self.rect.left = screenPos[0]
@@ -133,6 +142,7 @@ background = background.convert()
 background.blit(bg, (0,0))
 
 #init objs
+stat = Stat()
 av = A()
 cars = []
 allObj = [av]
@@ -168,3 +178,11 @@ while True:
         cars[i].update()
     pygame.display.flip()
     background.blit(bg, (0,0))
+    if pygame.font:
+        font = pygame.font.Font(None, 48)
+        statsTxt = font.render("Lives: " + str(stat.lives), 1, (10, 10, 10))
+        background.blit(statsTxt, (15, 725))
+
+    if stat.lives < 1:
+        #game over
+        continue
