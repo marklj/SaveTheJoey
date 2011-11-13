@@ -34,11 +34,15 @@ class Grid(pygame.sprite.Sprite):
 class A(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
-        self.image, self.rect = load_image('ball.gif')
+        self.image, self.rect = load_image('ball.png', 1)
         self.pos = [5,7]
         self.original = self.image
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
+        
+    def resetPos(self):
+        self.pos = [5,7]
+        #decrease life or score
         
     def move(self, direction):
         if(direction=='n' and self.pos[1] != 0):
@@ -50,13 +54,20 @@ class A(pygame.sprite.Sprite):
         elif(direction=='w' and self.pos[0] != 0):
             self.pos[0] -= 1
         return self.pos
+    
     def update(self):
-        screenPos = ((self.pos[0]*100),(self.pos[1]*100))
-        self.rect = screenPos
+        hitbox = self.rect.inflate(-10,0)
+        for i in range(0, len(cars)):
+            if(hitbox.colliderect(cars[i].rect) and self.rect != cars[i].rect):
+                self.resetPos()
+        screenPos = (((self.pos[0]*100)+10),((self.pos[1]*100)+10))
+        self.rect.left = screenPos[0]
+        self.rect.top = screenPos[1]
+        
 
 class Car(pygame.sprite.Sprite):
     def __init__(self, lane = None, speed = None):
-        self.wait = random.randrange(300)
+        self.wait = random.randrange(400)
         if lane != None:
             if lane > 3:
                 self.lane = 3
@@ -69,35 +80,53 @@ class Car(pygame.sprite.Sprite):
         else:
             self.speed = (self.lane+2)*2
         pygame.sprite.Sprite.__init__(self) #call sprite initializer
-        self.image, self.rect = load_image('chimp.bmp', -1)
+        self.image, self.rect = load_image('ball.png', -1)
         self.original = self.image
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
-        self.laneOffset = 700 - (self.lane*100)
+        self.laneOffset = 710 - (self.lane*100)
         newpos = self.rect.move((-100, self.laneOffset))
         self.rect = newpos
+
+    def resetPos(self, obj = None):
+        if obj == None:
+            obj = self
+        obj.rect.left = -250
+        #print 'moved'
         
     def update(self):
         if(self.wait > 0):
             newpos = self.rect.move((0, 0))
             self.wait -= 1
-        elif (self.rect.left < self.area.left-200 or self.rect.right > self.area.right+200):
+            self.rect = newpos
+        elif (self.rect.right > self.area.right+200):
             newpos = self.rect.move((-1250, 0))
-            self.wait = random.randrange(300)
+            self.wait = random.randrange(900)
+            self.rect = newpos
+        elif(self.rect.left > 10 and self.rect.left < 25):
+            hitbox = self.rect.inflate(100, 0)
+            newpos = self.rect.move((self.speed, 0))
+            for i in range(0, len(cars)):
+                if(hitbox.colliderect(cars[i].rect) and self.rect != cars[i].rect):
+                    self.resetPos(cars[i])
+                    cars[i].wait = random.randrange(200)
+                else:
+                    self.rect = newpos
         else:
             newpos = self.rect.move((self.speed, 0))
-        self.rect = newpos
-            
+            self.rect = newpos
+        
+        
 pygame.init()
 
 bg, bgRect = load_image('bg.bmp')
 screen = pygame.display.set_mode((1000, 800))
-modes = pygame.display.list_modes(16)
+modes = pygame.display.list_modes(32)
 if not modes:
     print '16 bit not supported'
 else:
     print 'found resolution:', modes[0]
-    #pygame.display.set_mode(modes[0], FULLSCREEN, 32)
+    #screen = pygame.display.set_mode(modes[0], FULLSCREEN, 32)
     
 background = pygame.Surface(screen.get_size())
 background = background.convert()
@@ -107,7 +136,7 @@ background.blit(bg, (0,0))
 av = A()
 cars = []
 allObj = [av]
-for i in range(0,40):
+for i in range(0,30):
     cars.append(Car(random.randrange(1,4)))
 allObj.extend(cars)
 allsprites = pygame.sprite.RenderPlain(allObj)
