@@ -52,6 +52,7 @@ class Fist(pygame.sprite.Sprite):
         if not self.punching:
             self.punching = True
             hitbox = self.rect.inflate(-5, -5)
+            print hitbox.colliderect(target.rect)
             return hitbox.colliderect(target.rect)
         
     def unpunch(self):
