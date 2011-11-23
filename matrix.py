@@ -45,6 +45,7 @@ class A(pygame.sprite.Sprite):
         self.original = self.image
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
+        self.offLog = 0
         
     def resetPos(self):
         self.pos = [5,7]
@@ -66,13 +67,27 @@ class A(pygame.sprite.Sprite):
         #if object hits another car...
         for i in range(0, len(cars)):
             if(hitbox.colliderect(cars[i].rect) and self.rect != cars[i].rect):
-                stat.lives -= 1
-                print stat.lives
                 self.resetPos()
-        screenPos = (((self.pos[0]*100)+10),((self.pos[1]*100)+10))
+                stat.lives -= 1
+            else:
+                screenPos = (((self.pos[0]*100)+10),((self.pos[1]*100)+10))
         self.rect.left = screenPos[0]
         self.rect.top = screenPos[1]
-        
+        if self.pos[1] == 1 or self.pos[1] == 2:
+            hitbox = self.rect.inflate(10,0)
+            if self.rect.collidelist(logs) != -1:
+                i = self.rect.collidelist(logs)
+                self.pos[0] = (logs[i].rect.left + (logs[i].rect.left % 100))/100
+                self.rect = self.rect.fit(logs[i].rect)
+            else:
+                self.resetPos()
+                stat.lives -= 1
+                        
+        elif self.pos[1] == 0:
+            stat.score += 1000
+            print stat.score
+            self.resetPos()
+            self.offLog = 0
 
 class Car(pygame.sprite.Sprite):
     def __init__(self, lane = None, speed = None):
@@ -125,6 +140,65 @@ class Car(pygame.sprite.Sprite):
             newpos = self.rect.move((self.speed, 0))
             self.rect = newpos
         
+        ##what needs to be done:
+            # detect if A is in water area
+                # if true then check if it is colliding with a log obj
+                    # if true then ride it
+                    # if false then reset pos and decrease life
+
+class Log(pygame.sprite.Sprite):
+    def __init__(self, lane = None, speed = None):
+        self.wait = random.randrange(400)
+        if lane != None:
+            if lane > 3:
+                self.lane = 3
+            else:
+                self.lane = lane
+        else:
+            self.lane = random.randrange(3)
+        if speed != None:
+            self.speed = speed
+        else:
+            self.speed = (self.lane+2)*2
+        pygame.sprite.Sprite.__init__(self) #call sprite initializer
+        self.image, self.rect = load_image('ball.png', -1)
+        self.original = self.image
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
+        self.laneOffset = 210 - (self.lane*100)
+        newpos = self.rect.move((1250, self.laneOffset))
+        self.rect = newpos
+
+    def resetPos(self, obj = None):
+        if obj == None:
+            obj = self
+        obj.rect.left = -250
+        #print 'moved'
+        
+    def update(self):
+        if(self.wait > 0):
+            newpos = self.rect.move((0, 0))
+            self.wait -= 1
+            self.rect = newpos
+        elif (self.rect.left < self.area.left-200):
+            newpos = self.rect.move((1250, 0))
+            self.wait = random.randrange(900)
+            self.rect = newpos
+        elif(self.rect.left > 10 and self.rect.left < 25):
+            hitbox = self.rect.inflate(100, 0)
+            newpos = self.rect.move((self.speed*-1, 0))
+            for i in range(0, len(cars)):
+                if(hitbox.colliderect(cars[i].rect) and self.rect != cars[i].rect):
+                    self.resetPos(cars[i])
+                    cars[i].wait = random.randrange(200)
+                else:
+                    self.rect = newpos
+        else:
+            newpos = self.rect.move((self.speed*-1, 0))
+            self.rect = newpos
+            
+        return self.speed
+        
         
 pygame.init()
 
@@ -145,10 +219,14 @@ background.blit(bg, (0,0))
 stat = Stat()
 av = A()
 cars = []
+logs = []
 allObj = [av]
 for i in range(0,30):
     cars.append(Car(random.randrange(1,4)))
+for i in range(0,10):
+    logs.append(Log(random.randrange(0,2)))
 allObj.extend(cars)
+allObj.extend(logs)
 allsprites = pygame.sprite.RenderPlain(allObj)
 print allsprites
 clock = pygame.time.Clock()
@@ -156,6 +234,7 @@ clock = pygame.time.Clock()
 while True:
     clock.tick(60)
     for event in pygame.event.get():
+        #print av.pos
         if event.type == QUIT:
             pygame.quit()
             sys.exit
@@ -176,6 +255,8 @@ while True:
     av.update()
     for i in range(0,len(cars)):
         cars[i].update()
+    for i in  range(0,len(logs)):
+        logs[i].update()
     pygame.display.flip()
     background.blit(bg, (0,0))
     if pygame.font:
