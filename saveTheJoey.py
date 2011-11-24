@@ -388,7 +388,7 @@ while True:
                     topscore.close()
                     highScoreTxt = "New high score: " + str(stat.score)
                 else:
-                    highScoreTxt = "Sorry, you did not break the high score!"
+                    highScoreTxt = "You did not break the high score!"
                 fileWrite = True
                 topscore.close()
             
