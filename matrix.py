@@ -4,14 +4,17 @@ from pygame.locals import *
 print 'starting game...'
 spriteClock = pygame.time.Clock()
 
-def load_image(name, colorkey=None):
+def load_image(name, colorkey=None, alpha = False):
     fullname = os.path.join('data/img', name)
     try:
         image = pygame.image.load(fullname)
     except pygame.error, message:
         print 'Cannot load image:', name
         raise SystemExit, message
-    image = image.convert(32)
+    if alpha:
+        image = image.convert_alpha()
+    else:
+        image = image.convert(32)
     if colorkey is not None:
         if colorkey is -1:
             colorkey = image.get_at((0,0))
@@ -40,7 +43,9 @@ class Grid(pygame.sprite.Sprite):
 class A(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
-        self.image, self.rect = load_image('ball.png', 1)
+        self.image, self.rect = load_image('joey.png', -1, True)
+        self.trans, self.trasRect = load_image('trans.png', -1, True)
+        self.image_orig = self.image
         self.pos = [5,7]
         self.original = self.image
         screen = pygame.display.get_surface()
@@ -63,6 +68,7 @@ class A(pygame.sprite.Sprite):
         return self.pos
     
     def update(self):
+        self.image = self.image_orig
         hitbox = self.rect.inflate(-10,0)
         #if object hits another car...
         for i in range(0, len(cars)):
@@ -73,12 +79,16 @@ class A(pygame.sprite.Sprite):
                 screenPos = (((self.pos[0]*100)+10),((self.pos[1]*100)+10))
         self.rect.left = screenPos[0]
         self.rect.top = screenPos[1]
+        for i in range(len(logs)):
+            logs[i].removeJoey()
         if self.pos[1] == 1 or self.pos[1] == 2:
+            self.image = self.trans
             hitbox = self.rect.inflate(10,0)
             if self.rect.collidelist(logs) != -1:
                 i = self.rect.collidelist(logs)
                 self.pos[0] = (logs[i].rect.left + (logs[i].rect.left % 100))/100
                 self.rect = self.rect.fit(logs[i].rect)
+                logs[i].addJoey()
             else:
                 self.resetPos()
                 stat.lives -= 1
@@ -161,14 +171,18 @@ class Log(pygame.sprite.Sprite):
         else:
             self.speed = (self.lane+2)*2
         pygame.sprite.Sprite.__init__(self) #call sprite initializer
-        self.image, self.rect = load_image('ball.png', -1)
+        self.image, self.rect = load_image('log.png', -1, True)
+        self.filled, self.filledRect = load_image('logFilled.png', -1, True)
         self.original = self.image
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.laneOffset = 210 - (self.lane*100)
         newpos = self.rect.move((1250, self.laneOffset))
         self.rect = newpos
-
+    def addJoey(self):
+        self.image = self.filled
+    def removeJoey(self):
+        self.image = self.original
     def resetPos(self, obj = None):
         if obj == None:
             obj = self
